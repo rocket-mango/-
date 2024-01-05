@@ -1,22 +1,21 @@
 package com.demogroup.demoweb.config;
 
 import com.demogroup.demoweb.domain.Role;
-import com.demogroup.demoweb.domain.User;
-import com.demogroup.demoweb.security.auth.CustomUserDetailsService;
-import com.demogroup.demoweb.service.UserService;
+import com.demogroup.demoweb.security.JWTFilter;
+import com.demogroup.demoweb.security.LoginFilter;
+import com.demogroup.demoweb.utils.JWTUtils;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
-import org.springframework.security.config.annotation.authentication.configuration.EnableGlobalAuthentication;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.authentication.AuthenticationManagerFactoryBean;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -25,32 +24,53 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 @RequiredArgsConstructor
 public class SecurityConfig {
+//왜인지는 모르겠지만 BCryptPasswordEncoder는 따로 만든 @Configuration에서 정의해주어야 잘 돌아가는 듯 하다
+//    @Bean
+//    public BCryptPasswordEncoder bCryptPasswordEncoder(){
+//        return new BCryptPasswordEncoder();
+//    }
+
+    private final AuthenticationConfiguration authenticationConfiguration;
+    private final JWTUtils jwtUtils;
+
     @Bean
-    public AuthenticationManager authenticationManager(HttpSecurity http) throws Exception{
-        return http.getSharedObject(AuthenticationManagerBuilder.class)
-                .build();
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception{
+        return authenticationConfiguration.getAuthenticationManager();
     }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception{
         return http
-                .httpBasic(httpBasic->httpBasic
-                        .disable())
                 .csrf(csrf->csrf
-                        .disable())
+                        .disable()
+                )
+                .formLogin((form)->form
+                        .disable()
+                )
+                .httpBasic((basic)->basic
+                        .disable()
+                )
                 .authorizeHttpRequests(request->request
-                        .requestMatchers(HttpMethod.POST,"/api/user/**","/user/**").permitAll()
-                        .requestMatchers(HttpMethod.POST,"/home").hasRole(Role.USER.name())
+                        .requestMatchers("/","/login","/loginform","/loginProc","/join","/joinProc","/admin").permitAll()
+//                        .requestMatchers("/admin").hasRole("USER")
                         .anyRequest().authenticated()
                 )
-                .formLogin((formLogin)->
-                        formLogin
-                                .loginPage("/user/login")
-                                .usernameParameter("username")
-                                .passwordParameter("password")
-                                .loginProcessingUrl("/login")
-                                .defaultSuccessUrl("/home",true)
-                                .permitAll())
+//                .formLogin(form->form
+//                        .loginPage("/login")
+//                        .loginProcessingUrl("/loginProc")
+//                        .defaultSuccessUrl("/admin")
+//                        .failureForwardUrl("/error")
+//                        .permitAll()
+//                )
+                .addFilterBefore(new JWTFilter(jwtUtils), LoginFilter.class)
+                .addFilterAt(new LoginFilter(authenticationManager(authenticationConfiguration),jwtUtils),UsernamePasswordAuthenticationFilter.class)
+                .logout((out)->out
+                        .logoutUrl("/logout")
+                        .logoutSuccessUrl("/")
+                )
+                .sessionManagement((session)->session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
                 .build();
     }
 }

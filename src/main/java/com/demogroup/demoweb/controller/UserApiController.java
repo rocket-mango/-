@@ -11,29 +11,34 @@ import lombok.RequiredArgsConstructor;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.ParseException;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.parameters.P;
 import org.springframework.validation.BindingResult;
+import org.springframework.validation.BindingResultUtils;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/user")
 @RequiredArgsConstructor
 public class UserApiController {
-    private final UserService userService;
+    //private final UserService userService;
 
-    @PostMapping("/join")
-    public ResponseEntity join(@Valid @RequestBody UserDTO dto, BindingResult bindingResult) throws ParseException {
-        if(bindingResult.hasErrors()){
-            throw new AppException(ErrorCode.INVALID_PASSWORD,"비밀번호는 숫자,영문자(대소문자 가능),특수문자 조합의 8자 이상이어야 합니다.");
-        }
-        User joinUser = userService.join(dto);
-        JSONObject jsonObject = MakeJsonUtil.makeJoinJson(joinUser.getUsername(), joinUser.getPassword());
-        return ResponseEntity.ok().body(jsonObject);
-    }
-
-
-
-
-
+//    @PostMapping("/join")
+//    public ResponseEntity join(@Valid @RequestBody UserDTO dto, BindingResult bindingResult) throws ParseException {
+//        if(bindingResult.hasErrors()){
+//            throw new AppException(ErrorCode.INVALID_PASSWORD,"비밀번호는 숫자,영문자(대소문자 가능),특수문자 조합의 8자 이상이어야 합니다.");
+//        }
+//        UserDTO joinUser = userService.join(dto);
+//        JSONObject jsonObject = MakeJsonUtil.makeJoinJson(joinUser.getUsername(), joinUser.getPassword());
+//        System.out.println("UserApiController.join");
+//        return ResponseEntity.ok().body(jsonObject);
+//    }
+//
+//    @PostMapping("/modify")
+//    public ResponseEntity modify(UserDTO dto) throws ParseException{
+//        UserDTO modified = userService.modify(dto);
+//        JSONObject jsonObject = MakeJsonUtil.makeModifyJson(modified);
+//        return ResponseEntity.ok().body(jsonObject);
+//    }
 
 }
 
